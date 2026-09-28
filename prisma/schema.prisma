@@ -1,0 +1,96 @@
+// Participant Hub — Prisma schema (SQLite)
+// Enums on SQLite require Prisma ORM >= 6.2.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// REAL = "จริง" (active), GEH = "เก๊" (blacklisted)
+enum ParticipantStatus {
+  REAL
+  GEH
+}
+
+enum BlacklistReason {
+  NO_SHOW
+  FAKE_PROFILE
+  INAPPROPRIATE_BEHAVIOR
+  OTHER
+}
+
+model Participant {
+  id        String  @id @default(uuid())
+  firstName String
+  lastName  String
+  /// Normalized digits only (e.g. 0812345678). Natural key for duplicate checks / upserts.
+  phone     String  @unique
+  email     String? @unique
+  lineId    String?
+
+  age           Int?
+  gender        String?
+  occupation    String?
+  monthlyIncome String?
+  province      String?
+
+  /// JSON-encoded string array, e.g. ["SME Owner","iPhone User"].
+  /// SQLite has no scalar lists; quoting each tag lets us filter with `contains: '"Tag"'`.
+  tags String @default("[]")
+
+  /// JSON-encoded object of extra columns from imports that don't match the template,
+  /// e.g. {"รุ่นรถ":"Civic","ธนาคารที่ใช้":"KBank"}.
+  extraFields String @default("{}")
+
+  status            ParticipantStatus @default(REAL)
+  pdpaConsentSigned Boolean           @default(false)
+  pdpaSignedDate    DateTime?
+
+  totalInterviews Int       @default(0)
+  lastSessionDate DateTime?
+
+  /// Set when PII has been removed under PDPA right-to-be-forgotten.
+  anonymizedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions         ResearchSession[]
+  blacklistRecords BlacklistRecord[]
+
+  @@index([status])
+  @@index([province])
+  @@index([lastSessionDate])
+}
+
+model BlacklistRecord {
+  id            String          @id @default(uuid())
+  participantId String
+  participant   Participant     @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  reason        BlacklistReason
+  details       String
+  flaggedBy     String
+  flaggedAt     DateTime        @default(now())
+
+  @@index([participantId])
+}
+
+model ResearchSession {
+  id            String      @id @default(uuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  projectName   String
+  sessionDate   DateTime
+  interviewer   String
+  /// 1 = ตอบงง, 2 = พูดไม่ค่อยเก่ง พอให้ข้อมูลได้, 3 = เล่าดี
+  behaviorRating Int
+  keyTakeaways   String    @default("")
+  createdAt      DateTime  @default(now())
+
+  @@index([participantId])
+  @@index([behaviorRating])
+}

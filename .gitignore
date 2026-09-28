@@ -1,2 +1,12 @@
-.DS_Store
 node_modules
+.next
+*.db
+*.db-journal
+next-env.d.ts
+*.tsbuildinfo
+
+# Local environment (Google keys etc.) — copy .env.example to .env
+.env
+.env.local
+*.backup-*
+.DS_Store
