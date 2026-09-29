@@ -1,4 +1,4 @@
-// Participant Hub — Prisma schema (SQLite)
+// Participant Hub — Prisma schema (PostgreSQL for Supabase)
 // Enums on SQLite require Prisma ORM >= 6.2.
 
 generator client {
@@ -6,8 +6,10 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Vercel Supabase integration already provides these names
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
 /// REAL = "จริง" (active), GEH = "เก๊" (blacklisted)
